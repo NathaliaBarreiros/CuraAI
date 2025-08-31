@@ -6,12 +6,14 @@ import {useCallback, useEffect, useState } from "react"
 import { usePrivy } from '@privy-io/react-auth'
 import { useAccount, useSignMessage } from "wagmi"
 import { deriveEncryptionKeyFromPrivyPrivateKey, deriveEncryptionKeyFromSignature, maskHexPreview } from "@/lib/utils"
+import { usePatientContract } from "../hooks/usePatientContract"
+import { mapFormDataToNumbers, validatePatientData } from "../lib/utils/dataMapping"
 
 type User = {
     email: string,
     name: string
     age: string
-    nationality: string
+    country: string
     gender: string
   }
 
@@ -21,116 +23,87 @@ interface OnboardingFormProps {
   setCurrentView: React.Dispatch<React.SetStateAction<"login" | "onboarding" | "main" | "dashboard">>
 }
 
-const nationalities = [
-  "United States",
-  "Canada",
-  "United Kingdom",
-  "Australia",
-  "Germany",
-  "France",
-  "Italy",
-  "Spain",
-  "Netherlands",
-  "Sweden",
-  "Norway",
-  "Denmark",
-  "Japan",
-  "South Korea",
-  "Singapore",
-  "India",
-  "Brazil",
-  "Mexico",
-  "Argentina",
-  "Other",
-]
 
-const genderOptions = ["Female", "Male", "Non-binary", "Prefer not to say"]
 
 export default function OnboardingForm({ onComplete, formData, setCurrentView }: OnboardingFormProps) {
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const [isSubmitting, setIsSubmitting] = useState(false)
-
-  const [derived, setDerived] = useState<string>("")
+  const [fheStatus, setFheStatus] = useState<string>("")
 
   const { user, authenticated, ready } = usePrivy()
-
   const { signMessageAsync } = useSignMessage()
+  
+  // FHEVM integration
+  const { 
+    submitPatientData, 
+    isLoading: fheLoading, 
+    error: fheError, 
+    hasSubmittedData 
+  } = usePatientContract()
 
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {}
+  const { address } = useAccount()
+  
+  const handleDerive = async () => {
+    if (!address) throw new Error("Connect/login first to derive key")
 
-    if (!formData.name.trim()) {
-      newErrors.name = "Name is required"
-    }
+    const message = `Generate encryption key for ShadowVault session`
+    console.log('[EncryptionSetup] Message to sign:', message)
+    console.log('[EncryptionSetup] User address:', address)
 
-    const age = Number.parseInt(formData.age)
-    if (!formData.age || isNaN(age) || age < 18 || age > 120) {
-      newErrors.age = "Age must be between 18 and 120"
-    }
+    const sig = await signMessageAsync({ message })
+    console.log('[EncryptionSetup] Signature received:', sig)
 
-    if (!formData.nationality) {
-      newErrors.nationality = "Please select your nationality"
-    }
+    const { rawKey, base64Key } = await deriveEncryptionKeyFromSignature(sig, address)
+    console.log('[EncryptionSetup] Raw key (first 8 bytes):', Array.from(rawKey.slice(0, 8)).map(b => b.toString(16).padStart(2, '0')).join(''))
+    console.log('[EncryptionSetup] Derived key (base64):', base64Key)
 
-    if (!formData.gender) {
-      newErrors.gender = "Please select your gender"
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
+    // setDerived(base64Key)
+    return base64Key
   }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    if (!validateForm()) {
-      return
-    }
-
-    setIsSubmitting(true)
-
-    // Simulate API call delay
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    onComplete({
-      email: formData.email.trim(),
-      name: formData.name.trim(),
-      age: formData.age,
-      nationality: formData.nationality,
-      gender: formData.gender,
-    })
-
-    setIsSubmitting(false)
-  }
-
-      const { address } = useAccount()
-      const handleDerive = async () =>  {
-	      if (!address) throw new Error("Connect/login first to derive key")
-
-		      const message = `Generate encryption key for ShadowVault session`
-			      console.log('[EncryptionSetup] Message to sign:', message)
-		      console.log('[EncryptionSetup] User address:', address)
-
-		      const sig = await signMessageAsync({ message })
-		      console.log('[EncryptionSetup] Signature received:', sig)
-
-		      const { rawKey, base64Key } = await deriveEncryptionKeyFromSignature(sig, address)
-		      console.log('[EncryptionSetup] Raw key (first 8 bytes):', Array.from(rawKey.slice(0, 8)).map(b => b.toString(16).padStart(2, '0')).join(''))
-		      console.log('[EncryptionSetup] Derived key (base64):', base64Key)
-
-		      // setDerived(base64Key)
-		      return base64Key
-      }
 
   const handleOnboardingSubmit = async (data: any) => {
-	  console.log("==========================")
-    onComplete((prev) => ({ ...prev, ...data }))
-    handleDerive().then(result => {
-	    console.log("------------------------ this is the key for zama", result)
-    })
+    console.log("🔐 Starting FHE encryption process...")
+    
+    try {
+      // Validate form data
+      const validation = validatePatientData(data);
+      if (!validation.isValid) {
+        setErrors(validation.errors.reduce((acc, error) => ({ ...acc, general: error }), {}));
+        return;
+      }
 
-    //TODO connectWithZama()
-    setCurrentView("main")
+      setFheStatus("🔐 Encrypting data...");
+      
+      // Convert form data to numeric format for FHE
+      const patientData = mapFormDataToNumbers(data);
+      console.log("📊 Patient data for encryption:", patientData);
+
+      // Submit encrypted data to blockchain
+      const success = await submitPatientData(patientData);
+      
+      if (success) {
+        setFheStatus("✅ Data encrypted and stored successfully!");
+        console.log("🎉 FHE encryption completed successfully");
+        
+        // Complete the onboarding process
+        onComplete((prev) => ({ ...prev, ...data }));
+        
+        // Still derive the key for Filecoin (as mentioned by user)
+        handleDerive().then(result => {
+          console.log("🔑 Filecoin encryption key derived:", result);
+        });
+
+        // Navigate to main view
+        setCurrentView("main");
+      } else {
+        setFheStatus("❌ Failed to encrypt and store data");
+        setErrors({ general: "Failed to encrypt data. Please try again." });
+      }
+      
+    } catch (error) {
+      console.error("❌ FHE encryption error:", error);
+      setFheStatus("❌ Encryption failed");
+      setErrors({ general: `Encryption error: ${error}` });
+    }
   }
 
     return (
@@ -148,7 +121,7 @@ export default function OnboardingForm({ onComplete, formData, setCurrentView }:
               handleOnboardingSubmit({
                 name: formData.get("name"),
                 age: formData.get("age"),
-                nationality: formData.get("nationality"),
+                country: formData.get("country"),
                 gender: formData.get("gender"),
               })
             }}
@@ -177,21 +150,19 @@ export default function OnboardingForm({ onComplete, formData, setCurrentView }:
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Nationality</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
               <select
-                name="nationality"
+                name="country"
                 required
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500"
               >
-                <option value="">Select your nationality</option>
-                <option value="US">United States</option>
-                <option value="CA">Canada</option>
-                <option value="UK">United Kingdom</option>
-                <option value="AU">Australia</option>
-                <option value="DE">Germany</option>
-                <option value="FR">France</option>
-                <option value="JP">Japan</option>
-                <option value="Other">Other</option>
+                <option value="">Select your country</option>
+                <option value="1">🇪🇨 Ecuador</option>
+                <option value="2">🇦🇷 Argentina</option>
+                <option value="3">🇧🇷 Brasil</option>
+                <option value="4">🇺🇸 United States</option>
+                <option value="5">🇨🇦 Canada</option>
+                <option value="6">🇫🇷 Francia</option>
               </select>
             </div>
 
@@ -210,11 +181,41 @@ export default function OnboardingForm({ onComplete, formData, setCurrentView }:
               </select>
             </div>
 
+            {/* FHE Status and Error Display */}
+            {fheStatus && (
+              <div className={`p-3 rounded-lg text-sm ${
+                fheStatus.includes("✅") 
+                  ? "bg-green-100 text-green-800" 
+                  : fheStatus.includes("❌") 
+                    ? "bg-red-100 text-red-800"
+                    : "bg-blue-100 text-blue-800"
+              }`}>
+                {fheStatus}
+              </div>
+            )}
+
+            {errors.general && (
+              <div className="p-3 bg-red-100 text-red-800 rounded-lg text-sm">
+                {errors.general}
+              </div>
+            )}
+
+            {fheError && (
+              <div className="p-3 bg-red-100 text-red-800 rounded-lg text-sm">
+                FHE Error: {fheError}
+              </div>
+            )}
+
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 text-white py-3 px-4 rounded-lg hover:from-cyan-700 hover:to-blue-700 transition-all transform hover:scale-[1.02]"
+              disabled={fheLoading}
+              className={`w-full py-3 px-4 rounded-lg transition-all transform ${
+                fheLoading
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 hover:scale-[1.02]"
+              } text-white`}
             >
-              Complete Profile
+              {fheLoading ? "🔐 Encrypting..." : "Complete Profile"}
             </button>
           </form>
         </div>
