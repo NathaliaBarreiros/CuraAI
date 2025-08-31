@@ -177,7 +177,7 @@ pids
 *~
 
 # Cursor IDE
-.cursor/
+# .cursor/
 
 # OS generated files
 Thumbs.db

@@ -85,7 +85,7 @@ const handleMicToggle = async () => {
       const handleDerive = async () =>  {
 	      if (!address) throw new Error("Connect/login first to derive key")
 
-		      const message = `Generate encryption key for ShadowVault session`
+		      const message = `Generate encryption key for CuraAI session`
 			      console.log('[EncryptionSetup] Message to sign:', message)
 		      console.log('[EncryptionSetup] User address:', address)
 

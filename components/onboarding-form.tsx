@@ -6,8 +6,9 @@ import {useCallback, useEffect, useState } from "react"
 import { usePrivy } from '@privy-io/react-auth'
 import { useAccount, useSignMessage } from "wagmi"
 import { deriveEncryptionKeyFromPrivyPrivateKey, deriveEncryptionKeyFromSignature, maskHexPreview } from "@/lib/utils"
-import { usePatientContract } from "../hooks/usePatientContract"
-import { mapFormDataToNumbers, validatePatientData } from "../lib/utils/dataMapping"
+// COMMENTED OUT: FHEVM-related imports for basic testing
+// import { usePatientContract } from "../hooks/usePatientContract"
+// import { mapFormDataToNumbers, validatePatientData } from "../lib/utils/dataMapping"
 
 type User = {
     email: string,
@@ -32,20 +33,20 @@ export default function OnboardingForm({ onComplete, formData, setCurrentView }:
   const { user, authenticated, ready } = usePrivy()
   const { signMessageAsync } = useSignMessage()
   
-  // FHEVM integration
-  const { 
-    submitPatientData, 
-    isLoading: fheLoading, 
-    error: fheError, 
-    hasSubmittedData 
-  } = usePatientContract()
+  // FHEVM integration - COMMENTED OUT FOR BASIC TESTING
+  // const { 
+  //   submitPatientData, 
+  //   isLoading: fheLoading, 
+  //   error: fheError, 
+  //   hasSubmittedData 
+  // } = usePatientContract()
 
   const { address } = useAccount()
   
   const handleDerive = async () => {
     if (!address) throw new Error("Connect/login first to derive key")
 
-    const message = `Generate encryption key for ShadowVault session`
+    const message = `Generate encryption key for CuraAI session`
     console.log('[EncryptionSetup] Message to sign:', message)
     console.log('[EncryptionSetup] User address:', address)
 
@@ -61,50 +62,83 @@ export default function OnboardingForm({ onComplete, formData, setCurrentView }:
   }
 
   const handleOnboardingSubmit = async (data: any) => {
-    console.log("🔐 Starting FHE encryption process...")
+    console.log("📝 Starting basic profile completion...")
     
     try {
-      // Validate form data
-      const validation = validatePatientData(data);
-      if (!validation.isValid) {
-        setErrors(validation.errors.reduce((acc, error) => ({ ...acc, general: error }), {}));
+      // Basic validation (no FHEVM for now)
+      if (!data.name || !data.age || !data.gender || !data.country) {
+        setErrors({ general: "Please fill in all required fields" });
         return;
       }
 
-      setFheStatus("🔐 Encrypting data...");
+      setFheStatus("🔐 Generating encryption key...");
       
-      // Convert form data to numeric format for FHE
-      const patientData = mapFormDataToNumbers(data);
-      console.log("📊 Patient data for encryption:", patientData);
+      // Just derive the encryption key and complete the profile
+      const encryptionKey = await handleDerive();
+      console.log("🔑 Encryption key derived:", encryptionKey);
 
-      // Submit encrypted data to blockchain
-      const success = await submitPatientData(patientData);
+      setFheStatus("✅ Profile completed successfully!");
+      console.log("🎉 Basic profile completion successful");
       
-      if (success) {
-        setFheStatus("✅ Data encrypted and stored successfully!");
-        console.log("🎉 FHE encryption completed successfully");
-        
-        // Complete the onboarding process
-        onComplete((prev) => ({ ...prev, ...data }));
-        
-        // Still derive the key for Filecoin (as mentioned by user)
-        handleDerive().then(result => {
-          console.log("🔑 Filecoin encryption key derived:", result);
-        });
+      // Complete the onboarding process
+      onComplete((prev) => ({ ...prev, ...data }));
 
-        // Navigate to main view
-        setCurrentView("main");
-      } else {
-        setFheStatus("❌ Failed to encrypt and store data");
-        setErrors({ general: "Failed to encrypt data. Please try again." });
-      }
+      // Navigate to main view
+      setCurrentView("main");
       
     } catch (error) {
-      console.error("❌ FHE encryption error:", error);
-      setFheStatus("❌ Encryption failed");
-      setErrors({ general: `Encryption error: ${error}` });
+      console.error("❌ Profile completion error:", error);
+      setFheStatus("❌ Failed to complete profile");
+      setErrors({ general: `Error: ${error}` });
     }
   }
+
+  // COMMENTED OUT: Original FHEVM encryption process
+  // const handleOnboardingSubmitWithFHEVM = async (data: any) => {
+  //   console.log("🔐 Starting FHE encryption process...")
+  //   
+  //   try {
+  //     // Validate form data
+  //     const validation = validatePatientData(data);
+  //     if (!validation.isValid) {
+  //       setErrors(validation.errors.reduce((acc, error) => ({ ...acc, general: error }), {}));
+  //       return;
+  //     }
+
+  //     setFheStatus("🔐 Encrypting data...");
+  //     
+  //     // Convert form data to numeric format for FHE
+  //     const patientData = mapFormDataToNumbers(data);
+  //     console.log("📊 Patient data for encryption:", patientData);
+
+  //     // Submit encrypted data to blockchain
+  //     const success = await submitPatientData(patientData);
+  //     
+  //     if (success) {
+  //       setFheStatus("✅ Data encrypted and stored successfully!");
+  //       console.log("🎉 FHE encryption completed successfully");
+  //       
+  //       // Complete the onboarding process
+  //       onComplete((prev) => ({ ...prev, ...data }));
+  //       
+  //       // Still derive the key for Filecoin (as mentioned by user)
+  //       handleDerive().then(result => {
+  //         console.log("🔑 Filecoin encryption key derived:", result);
+  //       });
+
+  //       // Navigate to main view
+  //       setCurrentView("main");
+  //     } else {
+  //       setFheStatus("❌ Failed to encrypt and store data");
+  //       setErrors({ general: "Failed to encrypt data. Please try again." });
+  //     }
+  //     
+  //   } catch (error) {
+  //     console.error("❌ FHE encryption error:", error);
+  //     setFheStatus("❌ Encryption failed");
+  //     setErrors({ general: `Encryption error: ${error}` });
+  //   }
+  // }
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-cyan-50 to-blue-600 flex items-center justify-center p-4">
@@ -200,22 +234,19 @@ export default function OnboardingForm({ onComplete, formData, setCurrentView }:
               </div>
             )}
 
+            {/* COMMENTED OUT: FHEVM error display
             {fheError && (
               <div className="p-3 bg-red-100 text-red-800 rounded-lg text-sm">
                 FHE Error: {fheError}
               </div>
             )}
+            */}
 
             <button
               type="submit"
-              disabled={fheLoading}
-              className={`w-full py-3 px-4 rounded-lg transition-all transform ${
-                fheLoading
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 hover:scale-[1.02]"
-              } text-white`}
+              className="w-full py-3 px-4 rounded-lg transition-all transform bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 hover:scale-[1.02] text-white"
             >
-              {fheLoading ? "🔐 Encrypting..." : "Complete Profile"}
+              Complete Profile
             </button>
           </form>
         </div>
