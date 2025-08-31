@@ -2,6 +2,8 @@
 import { useState } from "react"
 import { usePrivy } from "@privy-io/react-auth"
 import { Stethoscope, User, Globe, Heart, Activity, Calendar } from "lucide-react"
+import { useWebSocketAudio } from "@/hooks/useWebSocketAudio"
+import { Mic, MicOff, Volume2} from 'lucide-react'
 
 
 type User = {
@@ -21,15 +23,60 @@ interface MainScreenProps {
 export default function MainScreen({ userInfo, setCurrentView }: MainScreenProps) {
   const { logout } = usePrivy()
   const [isInitializing, setIsInitializing] = useState(false)
+  const [isAIActive, setIsAIActive] = useState(false)
+// <CHANGE> Added WebSocket audio functionality with connection callbacks
+const { isConnected, isRecording, isPlaying, connect, disconnect, startRecording, stopRecording } = useWebSocketAudio(
+  {
+    serverUrl: "ws://localhost:8080/audio",
+    onConnectionOpen: () => {
+      console.log("[v0] Audio WebSocket connected successfully")
+      setIsAIActive(true)
+    },
+    onConnectionClose: () => {
+      console.log("[v0] Audio WebSocket disconnected")
+      setIsAIActive(false)
+    },
+    onError: (error) => {
+      console.error("[v0] WebSocket audio error:", error)
+      setIsInitializing(false)
+      setIsAIActive(false)
+    },
+  },
+)
 
-  const handleInitAI = async () => {
-    setIsInitializing(true)
-    // Simulate AI initialization process
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+// <CHANGE> Replaced mock initialization with real WebSocket connection
+const handleInitAI = async () => {
+  setIsInitializing(true)
+
+  try {
+    console.log("[v0] Initializing Medical AI Agent with audio communication...")
+    await connect()
+    console.log("[v0] Medical AI Agent initialized successfully")
+  } catch (error) {
+    console.error("[v0] Failed to initialize AI Agent:", error)
+    alert("Failed to initialize AI Agent. Please check your connection and try again.")
+  } finally {
     setIsInitializing(false)
-    // TODO: Implement actual AI agent initialization
-    console.log("AI Agent initialization would happen here")
   }
+}
+// <CHANGE> Added microphone recording control
+const handleMicToggle = async () => {
+  if (!isConnected) {
+    alert("AI Agent not connected. Please initialize first.")
+    return
+  }
+
+  try {
+    if (isRecording) {
+      stopRecording()
+    } else {
+      await startRecording()
+    }
+  } catch (error) {
+    console.error("[v0] Failed to toggle microphone:", error)
+    alert("Failed to access microphone. Please check permissions.")
+  }
+}
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-cyan-50 to-blue-50">
@@ -74,6 +121,81 @@ export default function MainScreen({ userInfo, setCurrentView }: MainScreenProps
               View Dashboard
             </button>
           </div>
+{/* Call to Action Section */}
+          <div className="space-y-6 pt-8">
+            <div className="space-y-3">
+              <h3 className="text-2xl font-bold text-balance">
+                {isAIActive ? "AI Agent Ready" : "Ready to Get Started?"}
+              </h3>
+              <p className="text-muted-foreground max-w-xl mx-auto text-balance">
+                {isAIActive
+                  ? "Your AI agent is connected and ready for voice interaction."
+                  : "Initialize your personal medical AI agent to begin receiving personalized health insights and recommendations."}
+              </p>
+            </div>
+
+            <div className="flex justify-center">
+              {!isAIActive ? (
+                <button
+                  onClick={handleInitAI}
+                  disabled={isInitializing}
+                  className="relative overflow-hidden bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white font-semibold px-12 py-6 text-lg rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 animate-pulse hover:animate-none"
+                >
+                  {isInitializing ? (
+                    <div className="flex items-center gap-3">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      Initializing AI Agent...
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      <Activity className="w-5 h-5" />
+                      Init Medical AI Agent
+                    </div>
+                  )}
+                </button>
+              ) : (
+                <div className="space-y-4">
+                  <button
+                    onClick={handleMicToggle}
+                    disabled={isPlaying}
+                    className={`px-12 py-6 text-lg rounded-full font-semibold transition-all duration-300 transform hover:scale-105 ${
+                      isRecording
+                        ? "bg-red-500 hover:bg-red-600 text-white"
+                        : "bg-green-500 hover:bg-green-600 text-white"
+                    }`}
+                  >
+                    {isRecording ? (
+                      <div className="flex items-center gap-3">
+                        <MicOff className="w-5 h-5" />
+                        Stop Recording
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-3">
+                        <Mic className="w-5 h-5" />
+                        Start Voice Chat
+                      </div>
+                    )}
+                  </button>
+
+                  {isPlaying && (
+                    <div className="flex items-center justify-center gap-2 text-blue-600">
+                      <Volume2 className="h-4 w-4" />
+                      <span>AI is responding...</span>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={() => {
+                      disconnect()
+                      setIsAIActive(false)
+                    }}
+                  >
+                    Disconnect AI Agent
+                  </button>
+                </div>
+              )}
+            </div>
+                </div>
         </div>
       </div>
     )
