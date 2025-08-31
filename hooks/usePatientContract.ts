@@ -34,10 +34,16 @@ export const usePatientContract = () => {
         const provider = new BrowserProvider(ethereumProvider);
         const signer = await provider.getSigner();
 
-        // Create contract instance
+        // Use PatientDemographics ABI (we know the contract works from Hardhat console)
+        const patientABI = [
+          "function submitPatientData(bytes32 encryptedData, bytes calldata inputProof)",
+          "function hasPatientData(address patientAddr) view returns (bool)",
+          "function totalPatients() view returns (bytes32)"
+        ];
+        
         const contractInstance = new ethers.Contract(
-          FHEVM_CONFIG.contractAddress,
-          PatientDemographicsABI.abi,
+          "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0", // PatientDemographics address that works
+          patientABI,
           signer
         );
 
@@ -95,47 +101,47 @@ export const usePatientContract = () => {
 
       console.log("🔐 Encrypting patient data...", patientData);
 
-      // Encrypt each field separately (following Zama template approach)
-      console.log("🔐 Creating separate encrypted inputs for each field...");
+      // EXACTLY like Zama template - single input with multiple fields
+      console.log("🔐 Creating encrypted input (Zama template style)...");
       
-      // Create separate inputs for each field
-      const ageInput = fhevmInstance.createEncryptedInput(
+      // Get the actual signer address instead of wallet address
+      const ethereumProvider = await wallets[0].getEthereumProvider();
+      const provider = new BrowserProvider(ethereumProvider);
+      const signer = await provider.getSigner();
+      const signerAddress = await signer.getAddress();
+      
+      console.log("🔑 Using signer address:", signerAddress);
+      
+      const input = fhevmInstance.createEncryptedInput(
         FHEVM_CONFIG.contractAddress,
-        wallets[0].address
+        signerAddress  // Use actual signer address
       );
-      ageInput.add8(patientData.age);
-      const encryptedAge = await ageInput.encrypt();
+      
+      // Pack all data into a single 32-bit value (like FHECounter)
+      // Format: age (8 bits) + gender (8 bits) + country (16 bits)
+      const packedData = patientData.age + (patientData.gender << 8) + (patientData.country << 16);
+      console.log("📦 Packed data:", packedData, "=", {
+        age: patientData.age,
+        gender: patientData.gender << 8, 
+        country: patientData.country << 16
+      });
+      
+      input.add32(packedData);  // Single 32-bit value (like FHECounter)
+      
+      // Encrypt (like Zama template)
+      const enc = await input.encrypt();
 
-      const genderInput = fhevmInstance.createEncryptedInput(
-        FHEVM_CONFIG.contractAddress,
-        wallets[0].address
-      );
-      genderInput.add8(patientData.gender);
-      const encryptedGender = await genderInput.encrypt();
-
-      const countryInput = fhevmInstance.createEncryptedInput(
-        FHEVM_CONFIG.contractAddress,
-        wallets[0].address
-      );
-      countryInput.add16(patientData.country);
-      const encryptedCountry = await countryInput.encrypt();
-
-      console.log("✅ All fields encrypted successfully");
+      console.log("✅ Data encrypted successfully");
       console.log("📋 Encrypted data structure:", {
-        age: { handle: encryptedAge.handles[0], proofLength: encryptedAge.inputProof.length },
-        gender: { handle: encryptedGender.handles[0], proofLength: encryptedGender.inputProof.length },
-        country: { handle: encryptedCountry.handles[0], proofLength: encryptedCountry.inputProof.length }
+        handles: enc.handles,
+        proofLength: enc.inputProof.length
       });
 
-      // Submit to smart contract using external encrypted inputs (following Zama template)
+      // Submit to PatientDemographics using submitPatientData (we know this works from console)
       console.log("📤 Calling contract.submitPatientData...");
       const tx = await contract.submitPatientData(
-        encryptedAge.handles[0],     // externalEuint8 for age
-        encryptedAge.inputProof,     // age proof
-        encryptedGender.handles[0],  // externalEuint8 for gender
-        encryptedGender.inputProof,  // gender proof
-        encryptedCountry.handles[0], // externalEuint16 for country
-        encryptedCountry.inputProof  // country proof
+        enc.handles[0],     // packed data (single field like FHECounter)
+        enc.inputProof      // single proof (like FHECounter)
       );
 
       console.log("📤 Transaction submitted:", tx.hash);

@@ -129,7 +129,7 @@ export interface PatientDemographicsInterface extends Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "submitPatientData",
-    values: [BytesLike, BytesLike, BytesLike, BytesLike, BytesLike, BytesLike]
+    values: [BytesLike, BytesLike]
   ): string;
   encodeFunctionData(
     functionFragment: "totalPatients",
@@ -384,14 +384,7 @@ export interface PatientDemographics extends BaseContract {
   preferNotToSayCount: TypedContractMethod<[], [string], "view">;
 
   submitPatientData: TypedContractMethod<
-    [
-      encryptedAge: BytesLike,
-      ageProof: BytesLike,
-      encryptedGender: BytesLike,
-      genderProof: BytesLike,
-      encryptedCountryCode: BytesLike,
-      countryProof: BytesLike
-    ],
+    [encryptedData: BytesLike, inputProof: BytesLike],
     [void],
     "nonpayable"
   >;
@@ -517,14 +510,7 @@ export interface PatientDemographics extends BaseContract {
   getFunction(
     nameOrSignature: "submitPatientData"
   ): TypedContractMethod<
-    [
-      encryptedAge: BytesLike,
-      ageProof: BytesLike,
-      encryptedGender: BytesLike,
-      genderProof: BytesLike,
-      encryptedCountryCode: BytesLike,
-      countryProof: BytesLike
-    ],
+    [encryptedData: BytesLike, inputProof: BytesLike],
     [void],
     "nonpayable"
   >;

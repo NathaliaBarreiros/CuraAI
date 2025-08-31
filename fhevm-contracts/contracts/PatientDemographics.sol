@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {FHE, euint8, euint16, euint32, eaddress, externalEuint8, externalEuint16} from "@fhevm/solidity/lib/FHE.sol";
+import {FHE, euint8, euint16, euint32, eaddress, externalEuint8, externalEuint16, externalEuint32} from "@fhevm/solidity/lib/FHE.sol";
 import {SepoliaConfig} from "@fhevm/solidity/config/ZamaConfig.sol";
 
 contract PatientDemographics is SepoliaConfig {
@@ -72,23 +72,21 @@ contract PatientDemographics is SepoliaConfig {
     }
 
     function submitPatientData(
-        externalEuint8 encryptedAge,
-        bytes calldata ageProof,
-        externalEuint8 encryptedGender,
-        bytes calldata genderProof,
-        externalEuint16 encryptedCountryCode,
-        bytes calldata countryProof
+        externalEuint32 encryptedData,
+        bytes calldata inputProof
     ) external {
         // Check if this is a new patient (prevent double counting)
         require(!patients[msg.sender].exists, "Patient data already exists");
 
-        // Convert external encrypted inputs to internal format
-        euint8 age = FHE.fromExternal(encryptedAge, ageProof);
-        euint8 gender = FHE.fromExternal(encryptedGender, genderProof);
-        euint16 countryCode = FHE.fromExternal(
-            encryptedCountryCode,
-            countryProof
-        );
+        // Convert external encrypted input to internal format
+        euint32 data = FHE.fromExternal(encryptedData, inputProof);
+
+        // Extract fields from packed data (age=bits 0-7, gender=bits 8-15, country=bits 16-31)
+        euint8 age = FHE.asEuint8(FHE.and(data, FHE.asEuint32(255))); // & 0xFF
+        euint8 gender = FHE.asEuint8(
+            FHE.shr(FHE.and(data, FHE.asEuint32(65280)), 8)
+        ); // >> 8 & 0xFF
+        euint16 countryCode = FHE.asEuint16(FHE.shr(data, 16)); // >> 16
 
         // Store individual encrypted data
         patients[msg.sender] = EncryptedPatientData({
