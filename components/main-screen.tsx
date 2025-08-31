@@ -4,6 +4,8 @@ import { usePrivy } from "@privy-io/react-auth"
 import { Stethoscope, User, Globe, Heart, Activity, Calendar } from "lucide-react"
 import { useWebSocketAudio } from "@/hooks/useWebSocketAudio"
 import { Mic, MicOff, Volume2} from 'lucide-react'
+import { useAccount, useSignMessage } from "wagmi"
+import { deriveEncryptionKeyFromSignature } from "@/lib/utils"
 
 
 type User = {
@@ -24,6 +26,7 @@ export default function MainScreen({ userInfo, setCurrentView }: MainScreenProps
   const { logout } = usePrivy()
   const [isInitializing, setIsInitializing] = useState(false)
   const [isAIActive, setIsAIActive] = useState(false)
+  const { signMessageAsync } = useSignMessage()
 // <CHANGE> Added WebSocket audio functionality with connection callbacks
 const { isConnected, isRecording, isPlaying, connect, disconnect, startRecording, stopRecording } = useWebSocketAudio(
   {
@@ -76,6 +79,56 @@ const handleMicToggle = async () => {
     console.error("[v0] Failed to toggle microphone:", error)
     alert("Failed to access microphone. Please check permissions.")
   }
+}
+
+      const { address } = useAccount()
+      const handleDerive = async () =>  {
+	      if (!address) throw new Error("Connect/login first to derive key")
+
+		      const message = `Generate encryption key for ShadowVault session`
+			      console.log('[EncryptionSetup] Message to sign:', message)
+		      console.log('[EncryptionSetup] User address:', address)
+
+		      const sig = await signMessageAsync({ message })
+		      console.log('[EncryptionSetup] Signature received:', sig)
+
+		      const { rawKey, base64Key } = await deriveEncryptionKeyFromSignature(sig, address)
+		      console.log('[EncryptionSetup] Raw key (first 8 bytes):', Array.from(rawKey.slice(0, 8)).map(b => b.toString(16).padStart(2, '0')).join(''))
+		      console.log('[EncryptionSetup] Derived key (base64):', base64Key)
+
+		      // setDerived(base64Key)
+		      return base64Key
+      }
+
+const sendData = async (info: String) => {
+    try {
+      const response = await fetch('http://localhost:8000/api/data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ myString: info }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('Success:', result);
+      // Handle the successful response
+    } catch (error) {
+      console.error('Error sending data:', error);
+      // Handle any errors
+    }
+  };
+
+const stopAgent = async () => {
+      disconnect()
+      setIsAIActive(false)
+    handleDerive().then(result => {
+      sendData(result)
+    })
 }
 
     return (
@@ -185,10 +238,7 @@ const handleMicToggle = async () => {
                   )}
 
                   <button
-                    onClick={() => {
-                      disconnect()
-                      setIsAIActive(false)
-                    }}
+                    onClick={stopAgent}
                   >
                     Disconnect AI Agent
                   </button>
