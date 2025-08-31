@@ -9,40 +9,65 @@ Severe cases trigger escalation (e.g., emergency alerts or scheduling).
 - **Privy** → wallet-based identity & per-user key management  
 - **Phala TEE** → ephemeral, in-session inference (voice AI runs in secure enclave; session dies after use)  
 - **Zama FHE** → encrypted aggregation of demographic data (age, location, gender)  
-- **Filecoin** → encrypted storage of patient summaries (symptoms, probabilities of illness, advice)  
-- **Lisk** → micropayments + session receipts  
 - **v0 by Vercel** → rapid frontend build (onboarding, call initiation, dashboard)  
+
+*(Note: Lisk and Filecoin integrations are deferred to **post-hackathon future work**. The current MVP focuses on the AI, TEE, Zama, and v0 components.)*  
+
+---
+
+## Implemented in MVP (Hackathon Achievements)
+- **Zama integration** for encrypted demographic stats (live demo).  
+- **Frontend in v0 by Vercel** with onboarding, call initiation, and dashboard.  
+- **Voice AI agent** with:  
+  - Real voice input via Twilio + websocket streaming.  
+  - Symptom discernment + follow-up questioning.  
+  - Diagnosis suggestions powered by PubMed queries + natural language models.  
+- **End-to-end demo flow**: onboarding → AI call → diagnosis summary → encrypted demographic stats.  
+
+---
+
+## Planned Future Work
+- **Lisk:** micropayments + session receipts.  
+- **Filecoin:** encrypted long-term storage of patient summaries.  
+- **Zama:** expand to symptom-trend statistics (beyond demographics).  
+- **Phala:** deploy full AI agent inside a real TEE instead of mock.  
+- **Provider dashboard:** expand inbox demo into a functional portal.  
 
 ---
 
 ## Hackathon Tracks
-- Lisk  
-- Zama  
-- Filecoin  
-- v0 by Vercel  
-- Phala (TEE)  
+- AI / Privacy (main track)  
+- Zama (FHE demo on demographic data)  
+- v0 by Vercel (frontend build)  
+- Phala (TEE demo for AI agent)  
 
 ---
 
 ## Tech Stack
 - **Frontend:** v0 (Next.js + Tailwind, deployed on Vercel)  
-- **Voice AI:** Twilio + OpenAI Realtime API  
-- **Privacy/Encryption:** Privy, Zama FHE, Phala TEE (mock)  
-- **Storage:** Filecoin (via SynapseSDK)  
-- **Blockchain:** Lisk (scaffold-lisk starter)  
+- **Voice AI:** Twilio + OpenAI Realtime API (with websocket component)  
+- **Privacy/Encryption:** Privy, Zama FHE, Phala TEE (mock demo)  
+
+---
+
+## Demo Walkthrough
+1. User logs in via Gmail → Privy wallet created.  
+2. Fills 4-question form → demographics encrypted & aggregated via Zama.  
+3. Starts AI call (Twilio/websocket).  
+4. AI agent collects symptoms, asks follow-ups, and returns diagnosis probabilities (PubMed-backed).  
+5. Dashboard shows encrypted stats + summary of diagnosis output.  
 
 ---
 
 ## Quickstart (Hackathon Demo Setup)
-> ⚠️ This is a lightweight guide for hackathon demo purposes. Some steps may be placeholders.  
+> Lightweight guide for hackathon demo purposes. Some steps may be placeholders.  
 
 ### Prerequisites
 - Node.js + npm  
 - Git + GitHub account  
 - Privy API key  
 - Twilio account + number  
-- Access to Filecoin Calibration Testnet  
-- Lisk scaffold starter  
+- Access to Zama FHE demo template  
 
 ### Setup
 ```bash
@@ -62,28 +87,12 @@ vercel deploy
 
 ---
 
-## Usage
-1. **Onboarding:** Login via Gmail → Privy wallet created → fill 4-question form.  
-2. **Call Session:** User initiates AI call via Twilio → processed in Phala TEE (mock).  
-3. **Summary:** AI generates structured record → encrypted w/ Privy key → stored on Filecoin.  
-4. **Retrieval:** User logs back in → Privy re-derives key → fetch + decrypt summary.  
-5. **Provider Demo:** Mock inbox UI (screenshot shown in demo).  
-
----
-
 ## Architecture Diagram (textual)
 ```
 User → Form (V0) → Zama FHE (encrypted stats)
-    → Voice Call (Twilio) → Phala TEE (AI inference)
-    → Session Summary → Encrypted w/ Privy Key → Filecoin Storage
-    → Lisk Contract → Payment + Receipt
+    → Voice Call (Twilio/Websocket) → Phala TEE (AI inference)
+    → Diagnosis Summary → Displayed on Dashboard (mock storage)
 ```
----
-
-## Future Work
-- Expand Zama FHE usage to include **symptom-trend statistics** (not just demographics).  
-- Deploy AI agent fully inside Phala TEE instead of mocked enclave.  
-- Expand provider dashboard into fully functional portal.  
 
 ---
 
@@ -95,4 +104,4 @@ User → Form (V0) → Zama FHE (encrypted stats)
 
 ---
 
-In summary: **CuraAI = privacy-first telehealth intake agent, combining TEEs, FHE, Filecoin, Lisk, and rapid v0 frontend into a single demo-ready flow.**
+In summary: **CuraAI = privacy-first telehealth intake agent, combining TEEs, FHE, v0 frontend, and a live PubMed-powered AI voice agent into a secure, demo-ready flow.**
