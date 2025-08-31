@@ -5,11 +5,31 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createConfig, http } from 'wagmi';
 import {mainnet, sepolia} from 'viem/chains';
 
+// Define Hardhat Local chain for development
+const hardhatLocal = {
+  id: 31337,
+  name: 'Hardhat Local',
+  network: 'hardhat',
+  nativeCurrency: {
+    decimals: 18,
+    name: 'Ether',
+    symbol: 'ETH',
+  },
+  rpcUrls: {
+    default: { http: ['http://127.0.0.1:8545'] },
+    public: { http: ['http://127.0.0.1:8545'] },
+  },
+  blockExplorers: {
+    default: { name: 'Hardhat', url: 'http://localhost:8545' },
+  },
+};
+
 const queryClient = new QueryClient();
 
 const wagmiConfig = createConfig({
-  chains: [mainnet, sepolia],
+  chains: [hardhatLocal, mainnet, sepolia],
   transports: {
+    [hardhatLocal.id]: http('http://127.0.0.1:8545'),
     [mainnet.id]: http(),
     [sepolia.id]: http(),
   },
@@ -38,7 +58,7 @@ export function PrivyProvider({ children }) {
             createOnLogin: 'users-without-wallets',
           },
           loginMethods: ['email', 'google', 'wallet'],
-          supportedChains: [mainnet, sepolia],
+          supportedChains: [hardhatLocal, mainnet, sepolia],
         }}
       >
         <QueryClientProvider client={queryClient}>
