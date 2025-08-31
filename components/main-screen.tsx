@@ -163,7 +163,7 @@ const stopAgent = async () => {
           <div className="text-center">
             <button className="bg-gradient-to-r from-cyan-600 to-purple-600 text-white py-6 px-12 rounded-full text-xl font-semibold hover:from-cyan-700 hover:to-purple-700 transition-all transform hover:scale-105 animate-pulse shadow-2xl">
               <Activity className="inline h-6 w-6 mr-3" />
-              Init Medical AI Agent
+              Start CuraAI Agent 
             </button>
             <p className="mt-4 text-gray-600">Click to start your personalized medical consultation</p>
 

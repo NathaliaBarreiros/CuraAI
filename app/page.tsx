@@ -78,7 +78,7 @@ const { login } = useLogin({
                 <Stethoscope className="h-8 w-8 text-cyan-600" />
               </div>
             </div>
-            <h2 className="text-3xl font-bold text-gray-900">Welcome to MedAI</h2>
+            <h2 className="text-3xl font-bold text-gray-900">Welcome to CuraAI</h2>
             <p className="mt-2 text-gray-600">Your trusted medical AI companion</p>
           </div>
 	  <button

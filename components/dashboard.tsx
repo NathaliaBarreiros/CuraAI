@@ -117,7 +117,7 @@ export default function Dashboard({ userData, setCurrentView }: DashboardProps) 
       <div className="max-w-6xl mx-auto p-8">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Medical AI Dashboard</h1>
+            <h1 className="text-3xl font-bold text-gray-900">CuraAI Dashboard</h1>
             <p className="text-gray-600">Welcome back, {userData?.email}</p>
           </div>
           <button
@@ -162,7 +162,7 @@ export default function Dashboard({ userData, setCurrentView }: DashboardProps) 
               <h3 className="text-xl font-semibold text-gray-900 mb-4">Start New Session</h3>
               <button className="w-full bg-gradient-to-r from-cyan-600 to-purple-600 text-white py-4 px-6 rounded-full text-lg font-semibold hover:from-cyan-700 hover:to-purple-700 transition-all transform hover:scale-105">
                 <Activity className="inline h-5 w-5 mr-2" />
-                Init Medical AI Agent
+                Start CuraAI Agent
               </button>
             </div>
 
