@@ -24,7 +24,8 @@ interface DashboardProps {
     age: string
     nationality: string
     gender: string
-  } | null
+  } | null,
+  setCurrentView: React.Dispatch<React.SetStateAction<"login" | "onboarding" | "main" | "dashboard">>
 }
 
 // Mock session data
@@ -76,11 +77,10 @@ const mockSessions = [
   },
 ]
 
-export default function Dashboard({ userData }: DashboardProps) {
+export default function Dashboard({ userData, setCurrentView }: DashboardProps) {
   const { logout } = usePrivy()
   const [isInitializing, setIsInitializing] = useState(false)
 
-  const [currentView, setCurrentView] = useState<"login" | "onboarding" | "main" | "dashboard">("login")
 
   const handleInitAI = async () => {
     setIsInitializing(true)

@@ -111,6 +111,7 @@ return <OnboardingForm
 
 return <Dashboard 
   userData={userInfo}
+  setCurrentView={setCurrentView}
   // onSignOut={handleLogout}
   // onViewMain={() => setCurrentView("main")}
   // ... other props
