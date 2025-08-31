@@ -6,9 +6,9 @@
 **Purpose**: User sees their own data in their dashboard
 **Access**: Only the user can decrypt their own data
 
-### 2. **Aggregated Statistics** (Public/Provider Dashboard)  
-**Purpose**: Healthcare providers see population statistics
-**Access**: Anyone can see aggregated stats (but not individual data)
+### 2. **Aggregated Statistics** (Registered Users Dashboard)  
+**Purpose**: Registered users see population statistics
+**Access**: Only registered users (logged in with Privy + have submitted data) can view stats
 
 ## Architecture Design
 
@@ -238,8 +238,13 @@ function updateAgeGroupStats(euint8 age) private {
 ### **Who Can See Statistics?**
 
 ```solidity
-// Public statistics (anyone can decrypt)
-function getPublicStatistics() external view returns (
+// Statistics for registered users only
+modifier onlyRegisteredUser() {
+    require(patients[msg.sender].exists, "Must be registered user");
+    _;
+}
+
+function getStatistics() external view onlyRegisteredUser returns (
     euint32 total,
     euint32 males,
     euint32 females,
@@ -290,9 +295,9 @@ const loadUserDashboard = async () => {
 
 ### **Statistics Dashboard** (Aggregated Data)
 ```typescript
-// Anyone can see these statistics
-const loadPublicStats = async () => {
-    const encryptedStats = await contract.getPublicStatistics();
+// Only registered users can see these statistics
+const loadStatsForRegisteredUsers = async () => {
+    const encryptedStats = await contract.getStatistics();
     
     // Decrypt aggregated statistics
     const decrypted = await instance.userDecrypt([
@@ -351,8 +356,8 @@ function updateAllStats(euint8 age, euint8 gender) private {
 - **Provider-only access to detailed breakdowns**
 
 ### **Access Control**:
-- **Individual data**: Only user can decrypt
-- **Aggregated stats**: Anyone can decrypt (but data is still protected)
-- **Detailed stats**: Only authorized providers
+- **Individual data**: Only user can decrypt their own data
+- **Aggregated stats**: Only registered users (with Privy + submitted data) can decrypt
+- **Detailed stats**: Only authorized providers (if needed later)
 
 This approach gives you **privacy for individuals** while enabling **useful statistics for healthcare providers**.
