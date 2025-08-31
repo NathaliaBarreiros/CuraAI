@@ -28,7 +28,7 @@ const { login } = useLogin({
             console.log('Login method:', loginMethod);
             console.log('Login account:', loginAccount);
             // Navigate to dashboard, show welcome message, etc.
-      if (user.email?.address === "ledesma.nando@yahoo.com") {
+      if (isNewUser) {
 	      console.log("----------go to onboarding")
         setCurrentView("onboarding")
       } else {
@@ -78,7 +78,7 @@ const { login } = useLogin({
                 <Stethoscope className="h-8 w-8 text-cyan-600" />
               </div>
             </div>
-            <h2 className="text-3xl font-bold text-gray-900">Welcome to MedAI</h2>
+            <h2 className="text-3xl font-bold text-gray-900">Welcome to CuraAI</h2>
             <p className="mt-2 text-gray-600">Your trusted medical AI companion</p>
           </div>
 	  <button
@@ -111,6 +111,7 @@ return <OnboardingForm
 
 return <Dashboard 
   userData={userInfo}
+  setCurrentView={setCurrentView}
   // onSignOut={handleLogout}
   // onViewMain={() => setCurrentView("main")}
   // ... other props

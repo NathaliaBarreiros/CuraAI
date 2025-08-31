@@ -21,7 +21,7 @@ export default function LoginScreen() {
               />
             </svg>
           </div>
-          <CardTitle className="text-2xl font-bold text-balance">Welcome to MedAI</CardTitle>
+          <CardTitle className="text-2xl font-bold text-balance">Welcome to CuraAI</CardTitle>
           <CardDescription className="text-muted-foreground text-balance">
             Your trusted Web3 medical AI assistant. Sign in with your email to get started.
           </CardDescription>

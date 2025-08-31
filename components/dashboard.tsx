@@ -24,7 +24,8 @@ interface DashboardProps {
     age: string
     nationality: string
     gender: string
-  } | null
+  } | null,
+  setCurrentView: React.Dispatch<React.SetStateAction<"login" | "onboarding" | "main" | "dashboard">>
 }
 
 // Mock session data
@@ -76,11 +77,15 @@ const mockSessions = [
   },
 ]
 
-export default function Dashboard({ userData }: DashboardProps) {
+export default function Dashboard({ userData, setCurrentView }: DashboardProps) {
   const { logout } = usePrivy()
   const [isInitializing, setIsInitializing] = useState(false)
 
-  const [currentView, setCurrentView] = useState<"login" | "onboarding" | "main" | "dashboard">("login")
+
+  const userLogout = () => {
+	  logout()
+	  setCurrentView("login")
+  }
 
   const handleInitAI = async () => {
     setIsInitializing(true)
@@ -90,6 +95,9 @@ export default function Dashboard({ userData }: DashboardProps) {
     // TODO: Implement actual AI agent initialization
     console.log("AI Agent initialization would happen here")
   }
+
+  
+
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -109,11 +117,11 @@ export default function Dashboard({ userData }: DashboardProps) {
       <div className="max-w-6xl mx-auto p-8">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Medical AI Dashboard</h1>
+            <h1 className="text-3xl font-bold text-gray-900">CuraAI Dashboard</h1>
             <p className="text-gray-600">Welcome back, {userData?.email}</p>
           </div>
           <button
-            onClick={() => setCurrentView("login")}
+            onClick={userLogout}
             className="bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 transition-colors"
           >
             Sign Out
@@ -154,7 +162,7 @@ export default function Dashboard({ userData }: DashboardProps) {
               <h3 className="text-xl font-semibold text-gray-900 mb-4">Start New Session</h3>
               <button className="w-full bg-gradient-to-r from-cyan-600 to-purple-600 text-white py-4 px-6 rounded-full text-lg font-semibold hover:from-cyan-700 hover:to-purple-700 transition-all transform hover:scale-105">
                 <Activity className="inline h-5 w-5 mr-2" />
-                Init Medical AI Agent
+                Start CuraAI Agent
               </button>
             </div>
 
@@ -165,7 +173,9 @@ export default function Dashboard({ userData }: DashboardProps) {
                   <Calendar className="inline h-4 w-4 mr-2 text-cyan-600" />
                   Schedule Appointment
                 </button>
-                <button className="w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors border border-gray-200">
+                <button 
+		onClick={() => setCurrentView("onboarding")}
+		className="w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors border border-gray-200">
                   <User className="inline h-4 w-4 mr-2 text-cyan-600" />
                   Update Profile
                 </button>
