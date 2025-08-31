@@ -403,3 +403,6 @@ models/
 # IPython
 profile_default/
 ipython_config.py
+
+# Zama template (external repo)
+zama-template/
