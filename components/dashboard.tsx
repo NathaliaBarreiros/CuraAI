@@ -82,6 +82,11 @@ export default function Dashboard({ userData, setCurrentView }: DashboardProps) 
   const [isInitializing, setIsInitializing] = useState(false)
 
 
+  const userLogout = () => {
+	  logout()
+	  setCurrentView("login")
+  }
+
   const handleInitAI = async () => {
     setIsInitializing(true)
     // Simulate AI initialization process
@@ -90,6 +95,9 @@ export default function Dashboard({ userData, setCurrentView }: DashboardProps) 
     // TODO: Implement actual AI agent initialization
     console.log("AI Agent initialization would happen here")
   }
+
+  
+
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -113,7 +121,7 @@ export default function Dashboard({ userData, setCurrentView }: DashboardProps) 
             <p className="text-gray-600">Welcome back, {userData?.email}</p>
           </div>
           <button
-            onClick={() => setCurrentView("login")}
+            onClick={userLogout}
             className="bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 transition-colors"
           >
             Sign Out
@@ -165,7 +173,9 @@ export default function Dashboard({ userData, setCurrentView }: DashboardProps) 
                   <Calendar className="inline h-4 w-4 mr-2 text-cyan-600" />
                   Schedule Appointment
                 </button>
-                <button className="w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors border border-gray-200">
+                <button 
+		onClick={() => setCurrentView("onboarding")}
+		className="w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors border border-gray-200">
                   <User className="inline h-4 w-4 mr-2 text-cyan-600" />
                   Update Profile
                 </button>

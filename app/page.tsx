@@ -28,7 +28,7 @@ const { login } = useLogin({
             console.log('Login method:', loginMethod);
             console.log('Login account:', loginAccount);
             // Navigate to dashboard, show welcome message, etc.
-      if (user.email?.address === "ledesma.nando@yahoo.com") {
+      if (isNewUser) {
 	      console.log("----------go to onboarding")
         setCurrentView("onboarding")
       } else {
